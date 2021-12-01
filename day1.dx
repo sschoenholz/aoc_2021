@@ -1,0 +1,41 @@
+import parser
+
+'# Advent of Code
+## Day 1
+
+'#### Utils
+
+def cast (d:a) : m = (ordinal d)@m
+
+def shift (d:a) (s:Int) : m = (ordinal d + s)@m
+
+'#### IO
+
+in = unsafeIO do readFile "../aoc_2021/day1.in"
+
+def parseEntry : Parser Int = MkParser \h.
+  ans = parse h parseUnsignedInt
+  _ = parse h $ try (pChar '\n')
+  ans
+
+'### Part 1 
+
+(AsList _ depths) = fromJust $ runParser in $ parseMany parseEntry
+
+:t depths
+
+def countIncrease (depth: Fin n=>Int) : Int =
+  sum for i: (Range 1 n). BToI $ (depth.(shift i 1) - depth.(cast i)) > 0
+
+countIncrease depths
+
+'### Part 2
+
+def runningSum (depth: Fin n=>Int) : Fin n=>Int =
+  for i.
+    i' = ordinal i
+    case i' <= (n - 3) of
+      True -> sum for di: (Fin 3). depth.(fromOrdinal (Fin n) $ i' + ordinal di)
+      False -> zero
+
+countIncrease $ runningSum depths
