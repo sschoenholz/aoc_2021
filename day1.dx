@@ -5,13 +5,11 @@ import parser
 
 '#### Utils
 
-def cast (d:a) : m = (ordinal d)@m
+def cast (d:a) : m = (ordinal d) @ m
 
-def shift (d:a) (s:Int) : m = (ordinal d + s)@m
+def shift (d:a) (s:Int) : m = (ordinal d + s) @ m
 
 '#### IO
-
-in = unsafeIO do readFile "../aoc_2021/day1.in"
 
 def parseEntry : Parser Int = MkParser \h.
   ans = parse h parseUnsignedInt
@@ -20,6 +18,7 @@ def parseEntry : Parser Int = MkParser \h.
 
 '### Part 1 
 
+in = unsafeIO do readFile "../aoc_2021/day1.in"
 (AsList _ depths) = fromJust $ runParser in $ parseMany parseEntry
 
 :t depths
@@ -35,7 +34,7 @@ def runningSum (depth: Fin n=>Int) : Fin n=>Int =
   for i.
     i' = ordinal i
     case i' <= (n - 3) of
-      True -> sum for di: (Fin 3). depth.(fromOrdinal (Fin n) $ i' + ordinal di)
+      True -> sum for di: (Fin 3). depth.(shift di i')
       False -> zero
 
 countIncrease $ runningSum depths
