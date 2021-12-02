@@ -34,7 +34,7 @@ def runningSum (depth: Fin n=>Int) : Fin n=>Int =
   for i.
     i' = ordinal i
     case i' <= (n - 3) of
-      True -> sum for di: (Fin 3). depth.(shift di i')
+      True  -> sum for di: (Fin 3). depth.(shift di i')
       False -> zero
 
 countIncrease $ runningSum depths

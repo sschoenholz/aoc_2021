@@ -1,0 +1,96 @@
+import parser
+
+'# Advent of Code
+## Day 2
+
+'### Commands
+
+data CommandType =
+  Forward
+  Down
+  Up
+  None
+
+data Command = MkCommand {command: CommandType & amount: Int}
+
+'#### Parsing
+
+def parseChar : Parser Char = try $ MkParser \h.
+  c = parse h $ parseAny
+  assert $ c /= ' '
+  c
+
+def parseString : Parser String = parseMany parseChar
+  
+def parseCommandType : Parser CommandType = MkParser \h.
+  str = parse h parseString
+  if str == "forward"
+    then Forward
+    else if str == "down"
+      then Down
+      else if str == "up"
+        then Up
+        else None
+
+def parseCommand : Parser Command = MkParser \h.
+  command = parse h parseCommandType
+  _ = parse h $ parseAny
+  amount = parse h parseUnsignedInt
+  _ = parse h $ try $ pChar '\n'
+  MkCommand {command, amount}
+
+'### Part 1 
+
+in = unsafeIO do readFile "../aoc_2021/day2.in"
+
+(AsList _ commands) = fromJust $ runParser in $ parseMany parseCommand
+
+:t commands
+
+data State = MkState {depth: Int & horizontal : Int}
+
+def executeCommand (state: State) (command: Command) : State =  
+  (MkCommand {command, amount}) = command
+  (MkState {depth, horizontal}) = state
+  case command of
+    Forward -> MkState {depth, horizontal = horizontal + amount}
+    Down    -> MkState {depth = depth + amount, horizontal}
+    Up      -> MkState {depth = depth - amount, horizontal}
+
+state = MkState {depth = 0, horizontal = 0}
+
+state' = fold state \i s. executeCommand s commands.i
+state'
+
+'### Part 2
+
+data SubState = MkSubState {depth: Int & horizontal: Int & aim: Int}
+
+def executeSubCommand (state: SubState) (command: Command) : SubState =
+  (MkCommand {command, amount}) = command
+  (MkSubState {depth, horizontal, aim}) = state
+  case command of
+    Forward -> MkSubState {depth = depth + amount * aim,
+                           horizontal = horizontal + amount,
+                           aim}
+    Down    -> MkSubState {depth, horizontal, aim = aim + amount}
+    Up      -> MkSubState {depth, horizontal, aim = aim - amount}
+
+sub_state = MkSubState {depth = 0, horizontal = 0, aim = 0}
+
+sub_state' = fold sub_state \i s. executeSubCommand s commands.i
+sub_state'
+
+
+'### Slow parsing code
+
+def parseStringToCommandSlow (string: String) (command: CommandType) : Parser CommandType = try $ MkParser \h.
+  (AsList len chars) = string
+  chars' = for i: (Fin len). parse h $ parseAny
+  assert $ chars' == chars
+  command
+
+
+parseCommandSlow = (parseStringToCommandSlow "forward" Forward) <|>
+                   (parseStringToCommandSlow "down"    Down   ) <|>
+                   (parseStringToCommandSlow "up"      Up     )
