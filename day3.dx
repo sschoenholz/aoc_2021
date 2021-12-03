@@ -1,0 +1,56 @@
+import parser
+
+'# Advent of Code
+## Day 3
+
+'#### Parser
+
+def parseBinary : Parser ((Fin 12)=>Int) = MkParser \h.
+  for i: (Fin 12). parse h $ parseDigit
+
+def parseEntry : Parser ((Fin 12)=>Int) = MkParser \h.
+  ans = parse h parseBinary
+  _ = parse h $ try (pChar '\n')
+  ans
+
+'### Part 1 
+
+in = unsafeIO do readFile "../aoc_2021/day3.in"
+(AsList count binary) = fromJust $ runParser in $ parseMany parseEntry
+
+:t binary
+
+𝛾 = for j. BToI $ (sum for i. binary.i.j) > (idiv count 2)
+ε = for i. 1 - 𝛾.i
+
+def toInt (x: (Fin n)=>Int) : Int =
+  sum for i.
+    i' = ordinal i
+    x.i * intpow 2 (n - i' - 1)
+
+toInt 𝛾
+toInt ε
+
+'### Part 2
+
+def rating (pattern: Int->Int->Int) (bin: (Fin n)=>b=>Int) : (List (b=>Int)) =
+  bin_list = AsList n bin
+  filtered = withState bin_list \remaining.
+    for j.
+      (AsList len r) = get remaining
+      pat = pattern (sum for i. r.i.j) len
+      if len > 1 then remaining := filter (\x. x.j == pat) r
+    get remaining
+  filtered
+
+oxygen: (bin: (Fin n)=>b=>Int) -> (List (b=>Int)) =
+  rating (\ones len. BToI $ ones >= (idivCeil len 2))
+co2Scrubber: (bin: (Fin n)=>b=>Int) -> (List (b=>Int)) =
+  rating (\ones len. 1 - (BToI $ ones >= (idivCeil len 2)))
+
+(AsList _ ox) = oxygen binary
+(AsList _ o2) = co2Scrubber binary
+
+toInt ox.(0@_)
+toInt o2.(0@_)
+

@@ -58,7 +58,6 @@ def executeCommand (state: State) (command: Command) : State =
     Up      -> MkState {depth = depth - amount, horizontal}
 
 state = MkState {depth = 0, horizontal = 0}
-
 state' = fold state \i s. executeCommand s commands.i
 state'
 
@@ -77,20 +76,25 @@ def executeSubCommand (state: SubState) (command: Command) : SubState =
     Up      -> MkSubState {depth, horizontal, aim = aim - amount}
 
 sub_state = MkSubState {depth = 0, horizontal = 0, aim = 0}
-
 sub_state' = fold sub_state \i s. executeSubCommand s commands.i
 sub_state'
 
 
 '### Slow parsing code
 
-def parseStringToCommandSlow (string: String) (command: CommandType) : Parser CommandType = try $ MkParser \h.
+def parseStringToCommandTypeSlow (string: String) (command: CommandType) : Parser CommandType = try $ MkParser \h.
   (AsList len chars) = string
   chars' = for i: (Fin len). parse h $ parseAny
   assert $ chars' == chars
   command
 
 
-parseCommandSlow = (parseStringToCommandSlow "forward" Forward) <|>
-                   (parseStringToCommandSlow "down"    Down   ) <|>
-                   (parseStringToCommandSlow "up"      Up     )
+parseCommandTypeSlow = (parseStringToCommandTypeSlow "forward" Forward) <|>
+                       (parseStringToCommandTypeSlow "down"    Down   ) <|>
+                       (parseStringToCommandTypeSlow "up"      Up     )
+
+%time
+runParser "forward" $ parseCommandTypeSlow
+
+%time
+runParser "forwarddown" $ parseMany parseCommandTypeSlow
