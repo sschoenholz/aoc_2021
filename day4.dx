@@ -1,0 +1,92 @@
+import parser
+
+'# Advent of Code
+## Day 4
+
+'#### Boards
+
+Board = (Fin 5)=>(Fin 5)=>Int
+
+'#### Parsing
+
+def parseNumbers : Parser (List Int) = MkParser \h.
+  yieldState (AsList _ []) \nums.
+    iter \_.
+      push nums $ parse h parseUnsignedInt
+      c = parse h parseAny
+      if c == ','
+        then Continue
+        else Done ()
+
+def parseNotDigit : Parser Unit = MkParser \h.
+  c = parse h $ parseAny
+  i = W8ToI c - 48
+  assert $ i < 0 || i >= 10
+  ()
+
+def parseBoard : Parser Board = MkParser \h.
+  _ = parse h $ parseMany $ try parseNotDigit
+  numbers = for i j.
+      num = parse h parseUnsignedInt
+      _ = parse h $ parseMany $ try parseNotDigit
+      num
+  numbers
+
+def parseGame : Parser ((List Int) & ((Fin 100)=>Board)) = MkParser \h.
+  nums = parse h parseNumbers
+  board = for i. parse h $ parseBoard
+  (nums, board)
+
+in = unsafeIO do readFile "../aoc_2021/day4.in"
+(numList, boards) = fromJust $ runParserPartial in parseGame
+(AsList _ nums) = numList
+
+'### Part 1 
+
+def markNumber (num: Int) (board: n=>Board) : n=>Board =
+  for n i j.
+    if board.n.i.j == num
+      then -1
+      else board.n.i.j
+
+def boardWon (board: Board) : Bool =
+  anyRow    = any for i. all for j. board.i.j == -1
+  anyColumn = any for j. all for i. board.i.j == -1
+  anyRow || anyColumn
+
+def playGame (num: k=>Int) (initial: n=>Board) : (Board & Int) =
+  withState initial \boardRef.
+    iter \i.
+      board = markNumber num.(i@_) $ get boardRef
+      boardRef := board
+      (AsList n winner) = filter (\b. boardWon b) board
+      if n > 0
+        then Done (winner.(0@_), num.(i@_))
+        else Continue
+
+def computeScore (board: Board) (finalNum: Int) : Int =
+  s = sum for (i, j). if board.i.j > 0
+    then board.i.j
+    else 0
+  s * finalNum
+
+(board, finalNum) = playGame nums boards
+computeScore board finalNum
+
+'### Part 2
+
+def playGameUntilLast (num: k=>Int) (initial: Fin n=>Board) : (Board & Int) =
+  withState (AsList _ initial) \boardRef.
+    iter \i.
+      (AsList n board) = get boardRef
+      board' = markNumber num.(i@_) board
+      (AsList n' remaining) = filter (\b. not $ boardWon b) board'
+      boardRef := AsList _ remaining
+      if n' == 0
+        then Done (board'.(0@_), num.(i@_))
+        else Continue
+
+(lastBoard, lastFinalNum) = playGameUntilLast nums boards
+computeScore lastBoard lastFinalNum
+
+
